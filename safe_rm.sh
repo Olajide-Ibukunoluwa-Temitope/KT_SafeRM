@@ -3,81 +3,94 @@
 
 currentWD=$(pwd)
 presentItem=$1
-item=$presentItem
-Itempath=$currentWD/$presentItem
-Trashpath="/Users/kaitechstudent2/.Trash_Saferm"
-TotalItems=$(ls -l "$Itempath" | sort -k1,1  | awk -F " " '{print $NF}' | sed -e '$ d')
+#item=$presentItem
+itemPath=$currentWD/$presentItem
+trashPath="$HOME/.Trash_Saferm"
 
 
-#FUNCTIONS	
-enterDirectory(){
-	for item in $TotalItems;
-	do
-        until [[ ! -f "$@" && ! -d "@" ]];
-        do
-            #For files
-		if [[ -f "$item" ]];
-            	then
-                    read -p "Do you want to remove $item? " response
-                    if [[ $response == Y* ]] || [[ $response == y* ]]
-                    then
-                            mv "$Itempath" $Trashpath
-                            echo "$presentItem has been removed"
-                    elif [[ $response == N* ]] || [[ $response == n* ]]
-                    then
-                            echo "$presentItem not removed"
-                    fi
-            fi
-            #for Directory
-            if [[ -d "$item" ]];
-            then
-                read -p "Do you want to examine $presentItem? " response
-		if [[ $response == Y* ]] || [[ $respnose == y* ]]
-		then
-			EnterDirectory "$Itempath"
-		else
-			echo "Directory not examined"
-		fi
-            fi
-        done
-
-
-	done
-}
-
+#FUNCTIONS
 removeFiles(){
-        if [[ -f "$item" ]];
-                then
-                        read -p "Do you want to remove $presentItem ? " response
-                        if [[ $response == Y* ]] || [[ $response == y* ]]
-                        then
-                                mv "$Itempath" $Trashpath
-                                echo "$presentItem has been removed"
-                        elif [[ $response == N* ]] || [[ $response == n* ]]
-                        then
-                                echo "$presentItem not removed"
-                        fi
-         fi
+  # check if item is a file
+  if [[ -f "$1" ]];
+  then
+      #ask for permission to remove file
+          read -p "remove $1? " response
+          if [[ $response == Y* ]] || [[ $response == y* ]]
+          then
+              #remove file
+              # presentItem=$presentItem/$object
+                   # mv "$presentItem" $trashPath
+                  echo "$1 has been removed"
+          else
+              #file isn't remove
+                  echo "$1 not removed"
+          fi
+   fi
 }
 
+checkIfDirectoryIsEmpty(){
 
-#For Files
-if [[ -f "$1" ]];
+  dirContentsCheck=$(ls -l "$1" | sort -k1,1 | awk -F " " '{print $NF}' | sed -e '$ d' | wc -l | xargs)
+  #do a check on the the directory
+  if [[ $dirContentsCheck -gt 0 ]]
+  then
+      echo "Directory not empty"
+      read -p "examine $presentItem? " response
+        if [[ $response == Y* ]] || [[ $response == y* ]]
+        then
+            recursiveActionInDirectory
+        fi
+  elif [[ $dirContentsCheck -eq 0 ]]
+  then
+    echo "Directory empty"
+    # mv "$itemPath" $trashPath
+  fi
+
+}
+
+recursiveActionInDirectory(){
+
+  echo "============================================"
+  echo "in recursiveActionInDirectory";
+  #item=$1
+  totalItems=$(ls -l "$presentItem" | sort -k1,1  | awk -F " " '{print $NF}' | sed -e '$ d')
+  dirContentsCheck=$(ls -l "$presentItem" | sort -k1,1 | awk -F " " '{print $NF}' | sed -e '$ d' | wc -l | xargs)
+
+  # until [[ $dirContentsCheck -eq 0 ]]
+  # do
+    for object in $totalItems
+    do
+        if [[ -f "$presentItem/$object" ]]
+        then
+            removeFiles $presentItem/$object
+        elif [[ -d "$presentItem/$object" ]]
+        then
+
+
+            read -p "remove $presentItem/$object? " response
+            if [[ $response == Y* ]] || [[ $response == y* ]]
+            then
+
+              echo "ghgfggjg"
+              presentItem="$presentItem/$object"
+              checkIfDirectoryIsEmpty $presentItem
+            else
+                echo "$presentItem not examined"
+            fi
+        fi
+    done
+  # done
+}
+
+#FOR FILES
+if [[ -f "$presentItem" ]];
 then
-	removeFiles
+    removeFiles $presentItem
 fi
 
-#For Directories
-#if [[ -d "$1" ]];
-#then
-#	read -p "Do you want to examine $presentItem? " reply
-#	if [[ $reply == Y* ]] || [[ $reply == y* ]]
-#	then
-#		enterDirectory $1
-#	elif [[ $reply == N* ]] || [[ $reply == n* ]]
-#
-#        then
-#                echo "$presentItem not removed"
-#	fi
-#fi
-enterDirectory $1
+#FOR DIRECTORIES
+if [[ -d "$presentItem" ]];
+then
+    #first do a check to know if file is empty or not
+    checkIfDirectoryIsEmpty $1
+fi
