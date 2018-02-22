@@ -57,8 +57,6 @@ removeFiles(){
 # }
 
 recursiveActionInDirectory(){
-
-
     # echo "============================================"
     # echo "in recursiveActionInDirectory";
 
@@ -68,28 +66,21 @@ recursiveActionInDirectory(){
 
           for object in $totalItems
           do
-
               # echo "looping again"
-
               if [[ -f "$currentdir/$object" ]]
               then
                   removeFiles $currentdir/$object
-
-              else #[[ -d "$currentdir/$object" && $dirContentsCheck -gt 0 ]]
-              # then
+              else
                   read -p "do you want to examine files in $currentdir/$object? " response
                   if [[ $response == Y* ]] || [[ $response == y* ]]
                   then
-                currentdir="$1"
-                dirContentsCheck=$(ls -l "$currentdir/$object" | sort -k1,1 | awk -F " " '{print $NF}' | sed -e '$ d' | wc -l | xargs)
-                      if [[ -d "$currentdir/$object" ]] #&& $dirContentsCheck -gt 0 ]]
+                    currentdir="$1"
+                    dirContentsCheck=$(ls -l "$currentdir/$object" | sort -k1,1 | awk -F " " '{print $NF}' | sed -e '$ d' | wc -l | xargs)
+                      if [[ -d "$currentdir/$object" && $dirContentsCheck -gt 0 ]]
                       then
-                        if [[ $dirContentsCheck  -gt 0 ]]
-                        then
-                          recursiveActionInDirectory $currentdir/$object
-                        else
+                           recursiveActionInDirectory $currentdir/$object
+                      else
                         echo "$currentdir/$object removed"
-                        fi
                       fi
                   else
                       echo "$currentdir/$object not examined"
