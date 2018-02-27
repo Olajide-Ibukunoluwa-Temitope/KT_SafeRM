@@ -6,6 +6,14 @@ presentItem=$1
 #item=$presentItem
 itemPath=$currentWD/$presentItem
 trashPath="$HOME/.Trash_Saferm"
+vFlag=0
+rFlag=0
+dFlag=0
+# vArg=""
+# rArg=""
+# dArg=""
+
+
 
 
 
@@ -23,24 +31,24 @@ removeFunction(){
           else
                 echo "$1 not removed"
           fi
-   # fi
+
 }
 
- backToRootDir(){
+backToRootDir(){
 
-          dirContentsCheck=$(ls -l "$currentdir" | sort -k1,1 | awk -F " " '{print $NF}' | sed -e '$ d' | wc -l | xargs)
+          dirContentsCheck=$(ls -l "$1" | sort -k1,1 | awk -F " " '{print $NF}' | sed -e '$ d' | wc -l | xargs)
 
-          read -p "remove $currentdir? " response
+          read -p "remove $1? " response
             if [[ $response == Y* || $response == y* ]] && [[ $dirContentsCheck -eq 0 ]] #|| $dirContentsCheck -gt 0 ]]
             then
                 # move directory to trash
-                mv $currentdir $trashPath
-                echo "$currentdir removed"
+                mv $1 $trashPath
+                echo "$1 removed"
             elif [[ $response == Y* || $response == y* ]] && [[ $dirContentsCheck -gt 0 ]]
             then
-                echo "Safe_rm: $currentdir: Directory not empty"
+                echo "Safe_rm: $1: Directory not empty"
             else
-                echo "$currentdir not removed"
+                echo "$1 not removed"
             fi
   }
 
@@ -90,25 +98,91 @@ doYouWantToExaminePrompt(){
   read -p "examine files in directory $1? " response
 }
 
-#===========================================================================================================================================
+directories(){
+  if [[ -d "$1" ]];
+  then
+      #if arguement passed is a directory then ask if user wants to examine directory
+        doYouWantToExaminePrompt $1
+       if [[ $response == Y* ]] || [[ $response == y* ]]
+       then
+         #if user responds yes to examining directory then perform recursive function
+          recursiveActionInDirectory $1
+       else
+         #else if user responds no to examining directory then do this
+           echo "$1 not examined"
+       fi
+  fi
+}
 
-# FOR FILES
-if [[ -f "$presentItem" ]];
-then
-    removeFunction $presentItem
-fi
+files(){
+  if [[ -f "$presentItem" ]];
+  then
+      removeFunction $presentItem
+  fi
+}
 
-#FOR DIRECTORIES
-if [[ -d "$1" ]];
-then
-    #if arguement passed is a directory then ask if user wants to examine directory
-      doYouWantToExaminePrompt $1
-     if [[ $response == Y* ]] || [[ $response == y* ]]
-     then
-       #if user responds yes to examining directory then perform recursive function
-        recursiveActionInDirectory $1
-     else
-       #else if user responds no to examining directory then do this
-         echo "$1 not examined"
-     fi
-fi
+
+ files $1
+
+# directories $1
+
+while getopts ":v:r:d:" opt; do
+
+  # echo "${OPTARG:0:1} $opt $OPTARG"
+  case $opt in
+
+    v) #verbose
+        vFlag=1
+        vArg=$OPTARG
+
+        if [[ $vFlag -eq 1 && -f "$vArg" ]];
+        then
+           mv $vArg $trashPath
+          echo "$vArg removed"
+        elif [[ $vFlag -eq 1 && -d "$vArg" ]];
+        then
+          echo "Safe_rm: $vArg: is a directory"
+        fi
+
+      ;;
+
+    r) #recursive
+      rFlag=1
+      rArg=$OPTARG
+      if [[ $rFlag -eq 1 && -d "$rArg" ]];
+      then
+          directories $rArg
+      elif [[ $rFlag -eq 1 && -f "$rArg" ]];
+      then
+          echo "Safe_rm: $rArg: not directory"
+      fi
+      ;;
+
+    d) #remove directories
+      dFlag=1
+      dArg=$OPTARG
+      dirContentsCheck=$(ls -l "$dArg" | sort -k1,1 | awk -F " " '{print $NF}' | sed -e '$ d' | wc -l | xargs)
+      if [[ $dFlag -eq 1 && -d "$dArg" && dirContentsCheck -eq 0 ]];
+      then
+          # echo "removed $dArg"
+          mv $dArg $trashPath
+      #     backToRootDir $dArg
+      elif [[ $dFlag -eq 1 && -d "$dArg" && dirContentsCheck -gt 0 ]];
+      then
+            echo "Safe_rm: $dArg: Directory not empty"
+      else
+          mv $dArg $trashPath
+          # echo "removed $dArg"
+      #     removeFunction $dArg
+       fi
+      ;;
+
+    ?) #unknown option/dFlag
+      echo "Safe_rm: error invalid option: -$OPTARG"
+      ;;
+
+  esac
+done
+shift $((OPTIND - 1))
+# shift `expr $OPTIND - 1`
+# echo "$1"
